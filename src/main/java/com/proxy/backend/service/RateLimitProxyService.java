@@ -41,7 +41,8 @@ public class RateLimitProxyService implements AIGenerationService {
         int currentRequests = userState.getRequestsThisMinute();
 
         if (limit != Integer.MAX_VALUE && currentRequests >= limit) {
-            throw new RateLimitExceededException("Rate limit exceeded");
+            int retryAfter = 60 - LocalDateTime.now().getSecond();
+            throw new RateLimitExceededException("Rate limit exceeded", retryAfter);
         }
 
         userState.setLastRequestTime(now);

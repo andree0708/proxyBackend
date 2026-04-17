@@ -38,8 +38,10 @@ public class AIController {
         } catch (RateLimitExceededException e) {
             Map<String, Object> body = new HashMap<>();
             body.put("error", "Rate limit exceeded");
-            body.put("retryAfter", 60 - LocalDateTime.now().getSecond());
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(body);
+            body.put("retryAfter", e.getRetryAfterSeconds());
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .header("Retry-After", String.valueOf(e.getRetryAfterSeconds()))
+                    .body(body);
         } catch (QuotaExceededException e) {
             Map<String, Object> body = new HashMap<>();
             body.put("error", "Monthly quota exhausted");

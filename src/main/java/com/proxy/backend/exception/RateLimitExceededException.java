@@ -1,7 +1,14 @@
 package com.proxy.backend.exception;
 
 public class RateLimitExceededException extends RuntimeException {
-    public RateLimitExceededException(String message) {
+    private final int retryAfterSeconds;
+
+    public RateLimitExceededException(String message, int retryAfterSeconds) {
         super(message);
+        this.retryAfterSeconds = retryAfterSeconds;
+    }
+
+    public int getRetryAfterSeconds() {
+        return retryAfterSeconds;
     }
 }
