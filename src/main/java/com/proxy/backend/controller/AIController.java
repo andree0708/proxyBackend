@@ -54,27 +54,35 @@ public class AIController {
         Plan plan = userState.getPlan();
         int used = userState.getMonthlyTokensUsed();
         int total = plan.getMonthlyTokens();
+        int requestsPerMinute = plan.getRequestsPerMinute();
+        int requestsUsed = userState.getRequestsThisMinute();
 
         Map<String, Object> response = new HashMap<>();
         response.put("tokensUsed", used);
         response.put("tokensRemaining", total == Integer.MAX_VALUE ? "unlimited" : total - used);
         response.put("resetDate", getNextResetDate());
         response.put("plan", plan.name());
+        response.put("requestsPerMinute", requestsPerMinute == Integer.MAX_VALUE ? "unlimited" : requestsPerMinute);
+        response.put("requestsUsed", requestsUsed);
+        response.put("requestsRemaining", requestsPerMinute == Integer.MAX_VALUE ? "unlimited" : requestsPerMinute - requestsUsed);
 
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/quota/history")
     public ResponseEntity<List<Map<String, Object>>> getQuotaHistory() {
-        List<Map<String, Object>> history = List.of(
-            Map.of("date", LocalDate.now().minusDays(6).toString(), "tokensUsed", 0, "requestsCount", 0),
-            Map.of("date", LocalDate.now().minusDays(5).toString(), "tokensUsed", 0, "requestsCount", 0),
-            Map.of("date", LocalDate.now().minusDays(4).toString(), "tokensUsed", 0, "requestsCount", 0),
-            Map.of("date", LocalDate.now().minusDays(3).toString(), "tokensUsed", 0, "requestsCount", 0),
-            Map.of("date", LocalDate.now().minusDays(2).toString(), "tokensUsed", 0, "requestsCount", 0),
-            Map.of("date", LocalDate.now().minusDays(1).toString(), "tokensUsed", 0, "requestsCount", 0),
-            Map.of("date", LocalDate.now().toString(), "tokensUsed", 0, "requestsCount", 0)
-        );
+        UserContext.UserState userState = userContext.getOrCreateUser("default");
+        
+        List<Map<String, Object>> history = new java.util.ArrayList<>();
+        for (int i = 6; i >= 0; i--) {
+            LocalDate date = LocalDate.now().minusDays(i);
+            Map<String, Object> dayData = new HashMap<>();
+            dayData.put("date", date.toString());
+            dayData.put("tokensUsed", 0);
+            dayData.put("requestsCount", 0);
+            history.add(dayData);
+        }
+        
         return ResponseEntity.ok(history);
     }
 
