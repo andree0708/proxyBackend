@@ -1,0 +1,52 @@
+package com.proxy.backend.service;
+
+import com.proxy.backend.dto.GenerationRequest;
+import com.proxy.backend.dto.GenerationResponse;
+import com.proxy.backend.exception.RateLimitExceededException;
+import com.proxy.backend.model.Plan;
+import com.proxy.backend.model.UserContext;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+
+@Service
+public class RateLimitProxyService implements AIGenerationService {
+
+    private final UserContext userContext;
+    private AIGenerationService nextService;
+
+    public RateLimitProxyService(UserContext userContext) {
+        this.userContext = userContext;
+    }
+
+    public void setNextService(AIGenerationService nextService) {
+        this.nextService = nextService;
+    }
+
+    @Override
+    public GenerationResponse generate(GenerationRequest request) {
+        String userId = "default";
+        UserContext.UserState userState = userContext.getOrCreateUser(userId);
+        Plan plan = userState.getPlan();
+        int limit = plan.getRequestsPerMinute();
+
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime lastRequest = userState.getLastRequestTime();
+
+        if (lastRequest != null && ChronoUnit.MINUTES.between(lastRequest, now) >= 1) {
+            userState.resetRateLimit();
+        }
+
+        int currentRequests = userState.getRequestsThisMinute();
+
+        if (limit != Integer.MAX_VALUE && currentRequests >= limit) {
+            throw new RateLimitExceededException("Rate limit exceeded");
+        }
+
+        userState.setLastRequestTime(now);
+        userState.incrementRequests();
+
+        return nextService.generate(request);
+    }
+}
