@@ -88,12 +88,38 @@ public class AIController {
         return ResponseEntity.ok(history);
     }
 
+    @PostMapping("/quota/select-plan")
+    public ResponseEntity<Map<String, Object>> selectPlan(@RequestBody Map<String, String> request) {
+        String planName = request.get("plan");
+        Plan newPlan;
+        try {
+            newPlan = Plan.valueOf(planName.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid plan. Use FREE, PRO, or ENTERPRISE"));
+        }
+        
+        UserContext.UserState userState = userContext.getOrCreateUser("default");
+        Plan currentPlan = userState.getPlan();
+        userState.setPlan(newPlan);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("previousPlan", currentPlan.name());
+        response.put("currentPlan", newPlan.name());
+        response.put("message", "Plan changed successfully");
+
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/quota/upgrade")
     public ResponseEntity<Map<String, Object>> upgradePlan() {
         UserContext.UserState userState = userContext.getOrCreateUser("default");
         Plan currentPlan = userState.getPlan();
 
-        Plan newPlan = currentPlan == Plan.FREE ? Plan.PRO : currentPlan;
+        Plan newPlan = switch (currentPlan) {
+            case FREE -> Plan.PRO;
+            case PRO -> Plan.ENTERPRISE;
+            case ENTERPRISE -> Plan.ENTERPRISE;
+        };
         userState.setPlan(newPlan);
 
         Map<String, Object> response = new HashMap<>();
