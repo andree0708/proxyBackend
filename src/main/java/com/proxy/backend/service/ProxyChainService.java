@@ -25,6 +25,8 @@ public class ProxyChainService {
     }
 
     public GenerationResponse generate(String userId, GenerationRequest request) {
+        rateLimitProxy.setUserId(userId);
+        quotaProxy.setUserId(userId);
         return rateLimitProxy.generate(request);
     }
 }

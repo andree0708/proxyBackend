@@ -15,6 +15,7 @@ public class RateLimitProxyService implements AIGenerationService {
 
     private final UserContext userContext;
     private AIGenerationService nextService;
+    private String currentUserId = "default";
 
     public RateLimitProxyService(UserContext userContext) {
         this.userContext = userContext;
@@ -24,10 +25,13 @@ public class RateLimitProxyService implements AIGenerationService {
         this.nextService = nextService;
     }
 
+    public void setUserId(String userId) {
+        this.currentUserId = userId;
+    }
+
     @Override
     public GenerationResponse generate(GenerationRequest request) {
-        String userId = "default";
-        UserContext.UserState userState = userContext.getOrCreateUser(userId);
+        UserContext.UserState userState = userContext.getOrCreateUser(currentUserId);
         Plan plan = userState.getPlan();
         int limit = plan.getRequestsPerMinute();
 

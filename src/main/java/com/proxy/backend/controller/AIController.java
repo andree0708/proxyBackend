@@ -31,9 +31,10 @@ public class AIController {
     }
 
     @PostMapping("/ai/generate")
-    public ResponseEntity<?> generate(@Valid @RequestBody GenerationRequest request) {
+    public ResponseEntity<?> generate(@Valid @RequestBody GenerationRequest request,
+            @RequestParam(defaultValue = "default") String userId) {
         try {
-            GenerationResponse response = proxyChainService.generate("default", request);
+            GenerationResponse response = proxyChainService.generate(userId, request);
             return ResponseEntity.ok(response);
         } catch (RateLimitExceededException e) {
             Map<String, Object> body = new HashMap<>();
@@ -51,8 +52,9 @@ public class AIController {
     }
 
     @GetMapping("/quota/status")
-    public ResponseEntity<Map<String, Object>> getQuotaStatus() {
-        UserContext.UserState userState = userContext.getOrCreateUser("default");
+    public ResponseEntity<Map<String, Object>> getQuotaStatus(
+            @RequestParam(defaultValue = "default") String userId) {
+        UserContext.UserState userState = userContext.getOrCreateUser(userId);
         Plan plan = userState.getPlan();
         int used = userState.getMonthlyTokensUsed();
         int total = plan.getMonthlyTokens();
@@ -72,8 +74,9 @@ public class AIController {
     }
 
     @GetMapping("/quota/history")
-    public ResponseEntity<List<Map<String, Object>>> getQuotaHistory() {
-        UserContext.UserState userState = userContext.getOrCreateUser("default");
+    public ResponseEntity<List<Map<String, Object>>> getQuotaHistory(
+            @RequestParam(defaultValue = "default") String userId) {
+        UserContext.UserState userState = userContext.getOrCreateUser(userId);
         
         List<Map<String, Object>> history = new java.util.ArrayList<>();
         for (int i = 6; i >= 0; i--) {
@@ -89,7 +92,8 @@ public class AIController {
     }
 
     @PostMapping("/quota/select-plan")
-    public ResponseEntity<Map<String, Object>> selectPlan(@RequestBody Map<String, String> request) {
+    public ResponseEntity<Map<String, Object>> selectPlan(@RequestBody Map<String, String> request,
+            @RequestParam(defaultValue = "default") String userId) {
         String planName = request.get("plan");
         Plan newPlan;
         try {
@@ -98,7 +102,7 @@ public class AIController {
             return ResponseEntity.badRequest().body(Map.of("error", "Invalid plan. Use FREE, PRO, or ENTERPRISE"));
         }
         
-        UserContext.UserState userState = userContext.getOrCreateUser("default");
+        UserContext.UserState userState = userContext.getOrCreateUser(userId);
         Plan currentPlan = userState.getPlan();
         userState.setPlan(newPlan);
 
@@ -111,8 +115,9 @@ public class AIController {
     }
 
     @PostMapping("/quota/upgrade")
-    public ResponseEntity<Map<String, Object>> upgradePlan() {
-        UserContext.UserState userState = userContext.getOrCreateUser("default");
+    public ResponseEntity<Map<String, Object>> upgradePlan(
+            @RequestParam(defaultValue = "default") String userId) {
+        UserContext.UserState userState = userContext.getOrCreateUser(userId);
         Plan currentPlan = userState.getPlan();
 
         Plan newPlan = switch (currentPlan) {
